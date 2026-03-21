@@ -26,7 +26,7 @@ class ChannelCharter(nn.Module):
 
         self.feature = FeatureEngineeringLayer()
         self.fc1 = nn.Sequential(
-            nn.Linear(2000, 1024), nn.ReLU(), nn.BatchNorm1d(1024)
+            nn.Linear(26624, 1024), nn.ReLU(), nn.BatchNorm1d(1024)
         )
         self.fc2 = nn.Sequential(
             nn.Linear(1024, 512), nn.ReLU(), nn.BatchNorm1d(512)
@@ -51,5 +51,6 @@ class ChannelCharter(nn.Module):
 
     def forward(self, X):
         X = self.feature(X)
+        X = X.flatten(start_dim=1)
         X = self.encoder(X)
         return self.output_layer(X)
