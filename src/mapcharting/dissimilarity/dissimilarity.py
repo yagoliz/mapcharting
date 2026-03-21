@@ -1,6 +1,7 @@
 import multiprocessing as mp
 
 import numpy as np
+from scipy.sparse import spmatrix
 from scipy.sparse.csgraph import dijkstra
 from sklearn.neighbors import kneighbors_graph, NearestNeighbors
 import torch
@@ -38,10 +39,7 @@ def timestamp_dissimilarity(timestamps: np.ndarray) -> np.ndarray:
     return np.abs(np.subtract.outer(timestamps, timestamps))
 
 
-def 
-
-
-def get_weighted_graph(matrix: np.ndarray, n_neighbors: int = 20) -> np.ndarray:
+def get_weighted_graph(matrix: np.ndarray, n_neighbors: int = 20) -> spmatrix:
     nbrs_alg = NearestNeighbors(
         n_neighbors=n_neighbors, metric="precomputed", n_jobs=-1
     )
@@ -50,26 +48,27 @@ def get_weighted_graph(matrix: np.ndarray, n_neighbors: int = 20) -> np.ndarray:
     return nbg
 
 
+def _shortest_path_worker(graph, todo_queue, output_queue):
+    while True:
+        index = todo_queue.get()
+        if index == -1:
+            output_queue.put((-1, None))
+            break
+
+        d = dijkstra(graph, directed=False, indices=index)
+        output_queue.put((index, d))
+
+
 def geodesic_dissimilarity(
-    positions: np.ndarray, dissimilarity_matrix: np.ndarray, n_neighbors: int = 20
+    dissimilarity_matrix: np.ndarray, n_neighbors: int = 20
 ) -> np.ndarray:
     # Step 1: We need the weighted connectivity graph
-    graph = get_weighted_graph(dissimilarity_matrix)
+    graph = get_weighted_graph(dissimilarity_matrix, n_neighbors)
 
     # Step 2: Dijkstra computation
     output = np.zeros(graph.shape, dtype=np.float32)
 
-    def shortest_path_worker(todo_queue, output_queue):
-        while True:
-            index = todo_queue.get()
-            if index == -1:
-                output_queue.put((-1, None))
-                break
-
-            d = dijkstra(graph, directed=False, indices=index)
-            output_queue.put((index, d))
-
-    with tqdm(total=graph.shape[0] ** 2) as pbar:
+    with tqdm(total=graph.shape[0]) as pbar:
         todo_queue = mp.Queue()
         output_queue = mp.Queue()
 
@@ -78,7 +77,7 @@ def geodesic_dissimilarity(
 
         for i in range(mp.cpu_count()):
             todo_queue.put(-1)
-            p = mp.Process(target=shortest_path_worker, args=(todo_queue, output_queue))
+            p = mp.Process(target=_shortest_path_worker, args=(graph, todo_queue, output_queue))
             p.start()
 
         finished_processes = 0
@@ -86,8 +85,9 @@ def geodesic_dissimilarity(
             i, d = output_queue.get()
 
             if i == -1:
-                finished_processes = finished_processes + 1
+                finished_processes += 1
+            else:
                 output[i, :] = d
-                pbar.update(len(d))
+                pbar.update(1)
 
     return output

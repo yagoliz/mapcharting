@@ -1,16 +1,25 @@
 [project]
 name = "mapcharting"
 version = "0.1.0"
-description = "Add your description here"
 readme = "README.md"
+description = "Pytorch-based mapcharting library"
 requires-python = ">=3.12"
 dependencies = [
     "h5py>=3.15.1",
     "ipykernel>=7.2.0",
     "matplotlib>=3.10.8",
     "numpy>=2.4.1",
+    "scikit-learn>=1.8.0",
     "scipy>=1.17.1",
-    "tensorflow>=2.20.0",
     "torch>=2.10.0",
     "tqdm>=4.67.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+convert = [
+    "tensorflow>=2.20.0",
 ]
