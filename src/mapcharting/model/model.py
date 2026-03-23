@@ -54,3 +54,9 @@ class ChannelCharter(nn.Module):
         X = X.flatten(start_dim=1)
         X = self.encoder(X)
         return self.output_layer(X)
+
+    def save(self, filename=".cache/model.pt2"):
+        torch.save(self.state_dict(), filename)
+
+    def load(self, filename=".cache/model.pt2"):
+        self.load_state_dict(torch.load(filename, weights_only=True), strict=False)
