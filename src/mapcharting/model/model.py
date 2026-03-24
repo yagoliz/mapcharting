@@ -23,8 +23,11 @@ class ChannelCharter(nn.Module):
         super().__init__()
 
         self.feature = FeatureEngineeringLayer()
+        self.fc0 = nn.Sequential(
+            nn.Linear(26624, 4096), nn.ReLU(), nn.BatchNorm1d(4096)
+        )
         self.fc1 = nn.Sequential(
-            nn.Linear(26624, 1024), nn.ReLU(), nn.BatchNorm1d(1024)
+            nn.Linear(4096, 1024), nn.ReLU(), nn.BatchNorm1d(1024)
         )
         self.fc2 = nn.Sequential(
             nn.Linear(1024, 512), nn.ReLU(), nn.BatchNorm1d(512)
@@ -39,7 +42,7 @@ class ChannelCharter(nn.Module):
             nn.Linear(128, 64), nn.ReLU(), nn.BatchNorm1d(64)
         )
         self.encoder = nn.Sequential(
-            self.fc1, self.fc2, self.fc3, self.fc4, self.fc5,
+            self.fc0, self.fc1, self.fc2, self.fc3, self.fc4, self.fc5,
         )
         self.output_layer = nn.Linear(64, 2)
 
