@@ -23,32 +23,29 @@ class ChannelCharter(nn.Module):
         super().__init__()
 
         self.feature = FeatureEngineeringLayer()
-
-        # Feature engineering produces [batch, t, a, b, m, n, 2].
-        # We reshape to [batch, t, antenna_features] then permute to
-        # [batch, antenna_features, t] for Conv1d.
-        # Conv reduces the large antenna-correlation channel dim (2048),
-        # AdaptiveAvgPool1d aggregates across the t (tap) dimension.
-        self.conv = nn.Sequential(
-            nn.Conv1d(2048, 512, kernel_size=3, padding=1),  # [batch, 512, t]
-            nn.ReLU(),
-            nn.Conv1d(512, 128, kernel_size=3, padding=1),   # [batch, 128, t]
-            nn.ReLU(),
-            nn.AdaptiveAvgPool1d(1),                          # [batch, 128, 1]
+        self.fc1 = nn.Sequential(
+            nn.Linear(26624, 1024), nn.ReLU(), nn.BatchNorm1d(1024)
         )
-
-        # After flatten: [batch, 128]
+        self.fc2 = nn.Sequential(
+            nn.Linear(1024, 512), nn.ReLU(), nn.BatchNorm1d(512)
+        )
+        self.fc3 = nn.Sequential(
+            nn.Linear(512, 256), nn.ReLU(), nn.BatchNorm1d(256)
+        )
+        self.fc4 = nn.Sequential(
+            nn.Linear(256, 128), nn.ReLU(), nn.BatchNorm1d(128)
+        )
+        self.fc5 = nn.Sequential(
+            nn.Linear(128, 64), nn.ReLU(), nn.BatchNorm1d(64)
+        )
         self.encoder = nn.Sequential(
-            nn.Linear(128, 64), nn.ReLU(), nn.BatchNorm1d(64),
+            self.fc1, self.fc2, self.fc3, self.fc4, self.fc5,
         )
         self.output_layer = nn.Linear(64, 2)
 
     def forward(self, X):
-        X = self.feature(X)                        # [batch, t, a, b, m, n, 2]
-        X = X.reshape(X.shape[0], X.shape[1], -1)  # [batch, t, antenna_features]
-        X = X.permute(0, 2, 1)                     # [batch, antenna_features, t]
-        X = self.conv(X)
-        X = X.flatten(start_dim=1)                 # [batch, 128]
+        X = self.feature(X)
+        X = X.flatten(start_dim=1)
         X = self.encoder(X)
         return self.output_layer(X)
 
