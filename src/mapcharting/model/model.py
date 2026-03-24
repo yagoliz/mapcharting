@@ -23,7 +23,7 @@ class ChannelCharter(nn.Module):
         super().__init__()
 
         self.fc1 = nn.Sequential(
-            nn.Linear(416, 256), nn.ReLU(), nn.BatchNorm1d(256)
+            nn.Linear(832, 256), nn.ReLU(), nn.BatchNorm1d(256)
         )
         self.fc2 = nn.Sequential(
             nn.Linear(256, 64), nn.ReLU(), nn.BatchNorm1d(64)
@@ -37,7 +37,7 @@ class ChannelCharter(nn.Module):
         self.output_layer = nn.Linear(16, 2)
 
     def forward(self, X):
-        X = torch.abs(X)
+        X = torch.view_as_real(X)
         X = X.flatten(start_dim=1)
         X = self.encoder(X)
         return self.output_layer(X)
