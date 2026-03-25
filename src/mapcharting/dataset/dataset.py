@@ -5,11 +5,7 @@ from torch.utils.data import Dataset
 class CSIPairsDataset(Dataset):
     def __init__(self, csi, dissimilarity):
         self.csi = torch.tensor(csi, requires_grad=False)
-        # Replace inf geodesic distances (disconnected nodes) with the max finite value
-        # to prevent NaN gradients during training
-        d = torch.tensor(dissimilarity, requires_grad=False)
-        finite_max = d[torch.isfinite(d)].max()
-        self.dissimilarity = torch.where(torch.isfinite(d), d, finite_max)
+        self.dissimilarity = torch.tensor(dissimilarity, requires_grad=False)
         self.count = csi.shape[0]
 
     def __len__(self):
